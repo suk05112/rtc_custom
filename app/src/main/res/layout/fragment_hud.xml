@@ -5,7 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageButton
+
+
+        <ImageButton
         android:id="@+id/button_toggle_debug"
         android:background="@android:drawable/ic_menu_info_details"
         android:contentDescription="@string/toggle_debug"
