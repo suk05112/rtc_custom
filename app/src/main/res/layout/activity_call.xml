@@ -9,7 +9,7 @@
     android:layout_height="match_parent"
     tools:ignore="MergeRootFrame">
 
-    <org.webrtc.SurfaceViewRenderer
+    <SurfaceView
         android:id="@+id/fullscreen_video_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -32,6 +32,14 @@
         android:layout_height="match_parent" />
 
 </FrameLayout>
+
+<!--<org.webrtc.SurfaceViewRenderer-->
+<!--android:id="@+id/fullscreen_video_view"-->
+<!--android:layout_width="wrap_content"-->
+<!--android:layout_height="wrap_content"-->
+<!--android:layout_gravity="center" />-->
+
+
     <!--<?xml version="1.0" encoding="utf-8"?>-->
 
     <!--<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"-->

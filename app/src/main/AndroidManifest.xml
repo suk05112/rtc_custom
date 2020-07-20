@@ -31,9 +31,11 @@
 <!--                <category android:name="android.intent.category.LAUNCHER" />-->
 <!--            </intent-filter>-->
         </activity>
-        <activity android:name=".MainActivity"></activity>
+        <activity android:name=".ConnectActivity"></activity>
+        <activity android:name=".ConWatActivity"></activity>
+        <activity android:name=".WatchActivity"></activity>
 
-        <activity android:name="ConnectActivity"
+        <activity android:name="MainActivity"
             android:label="@string/app_name"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>

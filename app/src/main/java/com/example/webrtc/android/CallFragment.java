@@ -12,10 +12,13 @@ package com.example.webrtc.android;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -35,6 +38,8 @@ public class CallFragment extends Fragment {
   private OnCallEvents callEvents;
   private ScalingType scalingType;
   private boolean videoCallEnabled = true;
+
+
 
   /**
    * Call control interface for container activity.
@@ -60,6 +65,25 @@ public class CallFragment extends Fragment {
     toggleMuteButton = controlView.findViewById(R.id.button_call_toggle_mic);
     captureFormatText = controlView.findViewById(R.id.capture_format_text_call);
     captureFormatSlider = controlView.findViewById(R.id.capture_format_slider_call);
+
+    ImageButton button = controlView.findViewById(R.id.take_photo);
+    button.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        ((CallActivity) getActivity()).takePicture();
+      }
+    });
+    toggleMuteButton.setAlpha(1.0f);
+
+    Button gallery;
+    gallery = (Button) controlView.findViewById(R.id.gotoGall);
+    gallery.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        Intent mIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("content://media/internal/images/media"));
+        startActivity(mIntent);
+      }
+    });
 
     // Add buttons click events.
     disconnectButton.setOnClickListener(new View.OnClickListener() {
@@ -95,7 +119,9 @@ public class CallFragment extends Fragment {
       @Override
       public void onClick(View view) {
         boolean enabled = callEvents.onToggleMic();
-        toggleMuteButton.setAlpha(enabled ? 1.0f : 0.3f);
+//        toggleMuteButton.setAlpha(enabled ? 1.0f : 0.3f);
+        toggleMuteButton.setAlpha(1.0f);
+
       }
     });
 
