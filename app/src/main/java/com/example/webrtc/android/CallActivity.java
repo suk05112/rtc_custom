@@ -478,7 +478,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
       }
     });
   }
-
+//
   // Activity interfaces
   @Override
   public void onStop() {
