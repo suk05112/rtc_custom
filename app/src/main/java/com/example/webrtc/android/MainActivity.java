@@ -7,16 +7,11 @@ import android.view.View;
 
 public class MainActivity extends Activity {
 
-
-
     @Override
-
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
     }
-
-
 
     //Button을 클릭했을 때 호출되는 callback 메소드
 
@@ -25,11 +20,13 @@ public class MainActivity extends Activity {
         switch(v.getId()){
             case R.id.btn_broadcast:
                 i= new Intent(this, ConnectActivity.class);
+                i.putExtra("broadOrwatch", 0);
                 startActivity(i);
                 break;
 
             case R.id.btn_watch:
-                i= new Intent(this,ConWatActivity.class);
+                i= new Intent(this,ConnectActivity.class);
+                i.putExtra("broadOrwatch", 1);
                 startActivity(i);
                 break;
         }

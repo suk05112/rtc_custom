@@ -533,6 +533,8 @@ public class ConnectActivity extends AppCompatActivity {
         }
       }
 
+      Log.d("tag", "넘어온 값" + getIntent().getIntExtra("broadOrwatch", -1));
+      intent.putExtra("broadOrwatch", getIntent().getIntExtra("broadOrwatch", -1));
       startCallActivity(intent);
     }
   }

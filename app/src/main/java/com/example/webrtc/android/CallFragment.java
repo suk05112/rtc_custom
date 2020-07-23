@@ -70,7 +70,7 @@ public class CallFragment extends Fragment {
     button.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        ((CallActivity) getActivity()).takePicture();
+        //((CallActivity) getActivity()).takePicture();
       }
     });
     toggleMuteButton.setAlpha(1.0f);

@@ -4,57 +4,23 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.FragmentTransaction;
-import android.content.ContentResolver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.ImageFormat;
-import android.graphics.Matrix;
-import android.hardware.Sensor;
-import android.hardware.SensorManager;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
-import android.hardware.camera2.CaptureFailure;
-import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.CaptureResult;
-import android.hardware.camera2.TotalCaptureResult;
-import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.ExifInterface;
-import android.media.Image;
-import android.media.ImageReader;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
-import android.provider.MediaStore;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.Size;
-import android.util.SparseIntArray;
-import android.view.Menu;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
-import android.widget.FrameLayout;
 import android.widget.Toast;
-
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
 
 import org.appspot.apprtc.AppRTCAudioManager;
 import org.appspot.apprtc.AppRTCAudioManager.AudioDevice;
@@ -88,10 +54,7 @@ import org.webrtc.VideoFrame;
 import org.webrtc.VideoSink;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -102,112 +65,91 @@ import javax.annotation.Nullable;
  * and call view.
  */
 public class CallActivity extends Activity implements AppRTCClient.SignalingEvents,
-        PeerConnectionClient.PeerConnectionEvents, CallFragment.OnCallEvents {
-  private static final String TAG = "CallRTCClient";
-
-  public static final String EXTRA_ROOMID = "org.appspot.apprtc.ROOMID";
-  public static final String EXTRA_URLPARAMETERS = "org.appspot.apprtc.URLPARAMETERS";
-  public static final String EXTRA_LOOPBACK = "org.appspot.apprtc.LOOPBACK";
-  public static final String EXTRA_VIDEO_CALL = "org.appspot.apprtc.VIDEO_CALL";
-  public static final String EXTRA_SCREENCAPTURE = "org.appspot.apprtc.SCREENCAPTURE";
-  public static final String EXTRA_CAMERA2 = "org.appspot.apprtc.CAMERA2";
-  public static final String EXTRA_VIDEO_WIDTH = "org.appspot.apprtc.VIDEO_WIDTH";
-  public static final String EXTRA_VIDEO_HEIGHT = "org.appspot.apprtc.VIDEO_HEIGHT";
-  public static final String EXTRA_VIDEO_FPS = "org.appspot.apprtc.VIDEO_FPS";
-  public static final String EXTRA_VIDEO_CAPTUREQUALITYSLIDER_ENABLED =
-          "org.appsopt.apprtc.VIDEO_CAPTUREQUALITYSLIDER";
-  public static final String EXTRA_VIDEO_BITRATE = "org.appspot.apprtc.VIDEO_BITRATE";
-  public static final String EXTRA_VIDEOCODEC = "org.appspot.apprtc.VIDEOCODEC";
-  public static final String EXTRA_HWCODEC_ENABLED = "org.appspot.apprtc.HWCODEC";
-  public static final String EXTRA_CAPTURETOTEXTURE_ENABLED = "org.appspot.apprtc.CAPTURETOTEXTURE";
-  public static final String EXTRA_FLEXFEC_ENABLED = "org.appspot.apprtc.FLEXFEC";
-  public static final String EXTRA_AUDIO_BITRATE = "org.appspot.apprtc.AUDIO_BITRATE";
-  public static final String EXTRA_AUDIOCODEC = "org.appspot.apprtc.AUDIOCODEC";
-  public static final String EXTRA_NOAUDIOPROCESSING_ENABLED =
-          "org.appspot.apprtc.NOAUDIOPROCESSING";
-  public static final String EXTRA_AECDUMP_ENABLED = "org.appspot.apprtc.AECDUMP";
-  public static final String EXTRA_SAVE_INPUT_AUDIO_TO_FILE_ENABLED =
-          "org.appspot.apprtc.SAVE_INPUT_AUDIO_TO_FILE";
-  public static final String EXTRA_OPENSLES_ENABLED = "org.appspot.apprtc.OPENSLES";
-  public static final String EXTRA_DISABLE_BUILT_IN_AEC = "org.appspot.apprtc.DISABLE_BUILT_IN_AEC";
-  public static final String EXTRA_DISABLE_BUILT_IN_AGC = "org.appspot.apprtc.DISABLE_BUILT_IN_AGC";
-  public static final String EXTRA_DISABLE_BUILT_IN_NS = "org.appspot.apprtc.DISABLE_BUILT_IN_NS";
-  public static final String EXTRA_DISABLE_WEBRTC_AGC_AND_HPF =
-          "org.appspot.apprtc.DISABLE_WEBRTC_GAIN_CONTROL";
-  public static final String EXTRA_DISPLAY_HUD = "org.appspot.apprtc.DISPLAY_HUD";
-  public static final String EXTRA_TRACING = "org.appspot.apprtc.TRACING";
-  public static final String EXTRA_CMDLINE = "org.appspot.apprtc.CMDLINE";
-  public static final String EXTRA_RUNTIME = "org.appspot.apprtc.RUNTIME";
-  public static final String EXTRA_VIDEO_FILE_AS_CAMERA = "org.appspot.apprtc.VIDEO_FILE_AS_CAMERA";
-  public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE =
-          "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE";
-  public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE_WIDTH =
-          "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE_WIDTH";
-  public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE_HEIGHT =
-          "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE_HEIGHT";
-  public static final String EXTRA_USE_VALUES_FROM_INTENT =
-          "org.appspot.apprtc.USE_VALUES_FROM_INTENT";
-  public static final String EXTRA_DATA_CHANNEL_ENABLED = "org.appspot.apprtc.DATA_CHANNEL_ENABLED";
-  public static final String EXTRA_ORDERED = "org.appspot.apprtc.ORDERED";
-  public static final String EXTRA_MAX_RETRANSMITS_MS = "org.appspot.apprtc.MAX_RETRANSMITS_MS";
-  public static final String EXTRA_MAX_RETRANSMITS = "org.appspot.apprtc.MAX_RETRANSMITS";
-  public static final String EXTRA_PROTOCOL = "org.appspot.apprtc.PROTOCOL";
-  public static final String EXTRA_NEGOTIATED = "org.appspot.apprtc.NEGOTIATED";
-  public static final String EXTRA_ID = "org.appspot.apprtc.ID";
-  public static final String EXTRA_ENABLE_RTCEVENTLOG = "org.appspot.apprtc.ENABLE_RTCEVENTLOG";
-  public static final String EXTRA_USE_LEGACY_AUDIO_DEVICE =
-          "org.appspot.apprtc.USE_LEGACY_AUDIO_DEVICE";
-
-  private static final int CAPTURE_PERMISSION_REQUEST_CODE = 1;
-
-  // List of mandatory application permissions.
-  private static final String[] MANDATORY_PERMISSIONS = {"android.permission.MODIFY_AUDIO_SETTINGS",
-          "android.permission.RECORD_AUDIO", "android.permission.INTERNET"};
-
-  // Peer connection statistics callback period in ms.
-  private static final int STAT_CALLBACK_PERIOD = 1000;
-
-  private SurfaceHolder mSurfaceViewHolder;
-  private Handler mHandler;
-  private ImageReader mImageReader;
-  private CameraDevice mCameraDevice;
-  private CaptureRequest.Builder mPreviewBuilder;
-  private CameraCaptureSession mSession;
-  private int mDeviceRotation;
-  private Sensor mAccelerometer;
-  private Sensor mMagnetometer;
-  private SensorManager mSensorManager;
-  private DeviceOrientation deviceOrientation;
-  int mDSI_height, mDSI_width;
-  //private static final String TAG = "ConnectActivity";
+        PeerConnectionClient.PeerConnectionEvents,
+        CallFragment.OnCallEvents {
 
 
+private static final String TAG = "CallRTCClient";
 
-  private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-  static {
-    ORIENTATIONS.append(ExifInterface.ORIENTATION_NORMAL, 0);
-    ORIENTATIONS.append(ExifInterface.ORIENTATION_ROTATE_90, 90);
-    ORIENTATIONS.append(ExifInterface.ORIENTATION_ROTATE_180, 180);
-    ORIENTATIONS.append(ExifInterface.ORIENTATION_ROTATE_270, 270);
-  }
+public static final String EXTRA_ROOMID = "org.appspot.apprtc.ROOMID";
+public static final String EXTRA_URLPARAMETERS = "org.appspot.apprtc.URLPARAMETERS";
+public static final String EXTRA_LOOPBACK = "org.appspot.apprtc.LOOPBACK";
+public static final String EXTRA_VIDEO_CALL = "org.appspot.apprtc.VIDEO_CALL";
+public static final String EXTRA_SCREENCAPTURE = "org.appspot.apprtc.SCREENCAPTURE";
+public static final String EXTRA_CAMERA2 = "org.appspot.apprtc.CAMERA2";
+public static final String EXTRA_VIDEO_WIDTH = "org.appspot.apprtc.VIDEO_WIDTH";
+public static final String EXTRA_VIDEO_HEIGHT = "org.appspot.apprtc.VIDEO_HEIGHT";
+public static final String EXTRA_VIDEO_FPS = "org.appspot.apprtc.VIDEO_FPS";
+public static final String EXTRA_VIDEO_CAPTUREQUALITYSLIDER_ENABLED =
+        "org.appsopt.apprtc.VIDEO_CAPTUREQUALITYSLIDER";
+public static final String EXTRA_VIDEO_BITRATE = "org.appspot.apprtc.VIDEO_BITRATE";
+public static final String EXTRA_VIDEOCODEC = "org.appspot.apprtc.VIDEOCODEC";
+public static final String EXTRA_HWCODEC_ENABLED = "org.appspot.apprtc.HWCODEC";
+public static final String EXTRA_CAPTURETOTEXTURE_ENABLED = "org.appspot.apprtc.CAPTURETOTEXTURE";
+public static final String EXTRA_FLEXFEC_ENABLED = "org.appspot.apprtc.FLEXFEC";
+public static final String EXTRA_AUDIO_BITRATE = "org.appspot.apprtc.AUDIO_BITRATE";
+public static final String EXTRA_AUDIOCODEC = "org.appspot.apprtc.AUDIOCODEC";
+public static final String EXTRA_NOAUDIOPROCESSING_ENABLED =
+        "org.appspot.apprtc.NOAUDIOPROCESSING";
+public static final String EXTRA_AECDUMP_ENABLED = "org.appspot.apprtc.AECDUMP";
+public static final String EXTRA_SAVE_INPUT_AUDIO_TO_FILE_ENABLED =
+        "org.appspot.apprtc.SAVE_INPUT_AUDIO_TO_FILE";
+public static final String EXTRA_OPENSLES_ENABLED = "org.appspot.apprtc.OPENSLES";
+public static final String EXTRA_DISABLE_BUILT_IN_AEC = "org.appspot.apprtc.DISABLE_BUILT_IN_AEC";
+public static final String EXTRA_DISABLE_BUILT_IN_AGC = "org.appspot.apprtc.DISABLE_BUILT_IN_AGC";
+public static final String EXTRA_DISABLE_BUILT_IN_NS = "org.appspot.apprtc.DISABLE_BUILT_IN_NS";
+public static final String EXTRA_DISABLE_WEBRTC_AGC_AND_HPF =
+        "org.appspot.apprtc.DISABLE_WEBRTC_GAIN_CONTROL";
+public static final String EXTRA_DISPLAY_HUD = "org.appspot.apprtc.DISPLAY_HUD";
+public static final String EXTRA_TRACING = "org.appspot.apprtc.TRACING";
+public static final String EXTRA_CMDLINE = "org.appspot.apprtc.CMDLINE";
+public static final String EXTRA_RUNTIME = "org.appspot.apprtc.RUNTIME";
+public static final String EXTRA_VIDEO_FILE_AS_CAMERA = "org.appspot.apprtc.VIDEO_FILE_AS_CAMERA";
+public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE =
+        "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE";
+public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE_WIDTH =
+        "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE_WIDTH";
+public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE_HEIGHT =
+        "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE_HEIGHT";
+public static final String EXTRA_USE_VALUES_FROM_INTENT =
+        "org.appspot.apprtc.USE_VALUES_FROM_INTENT";
+public static final String EXTRA_DATA_CHANNEL_ENABLED = "org.appspot.apprtc.DATA_CHANNEL_ENABLED";
+public static final String EXTRA_ORDERED = "org.appspot.apprtc.ORDERED";
+public static final String EXTRA_MAX_RETRANSMITS_MS = "org.appspot.apprtc.MAX_RETRANSMITS_MS";
+public static final String EXTRA_MAX_RETRANSMITS = "org.appspot.apprtc.MAX_RETRANSMITS";
+public static final String EXTRA_PROTOCOL = "org.appspot.apprtc.PROTOCOL";
+public static final String EXTRA_NEGOTIATED = "org.appspot.apprtc.NEGOTIATED";
+public static final String EXTRA_ID = "org.appspot.apprtc.ID";
+public static final String EXTRA_ENABLE_RTCEVENTLOG = "org.appspot.apprtc.ENABLE_RTCEVENTLOG";
+public static final String EXTRA_USE_LEGACY_AUDIO_DEVICE =
+        "org.appspot.apprtc.USE_LEGACY_AUDIO_DEVICE";
 
-  private static class ProxyVideoSink implements VideoSink {
-    private VideoSink target;
+private static final int CAPTURE_PERMISSION_REQUEST_CODE = 1;
 
-    @Override
-    synchronized public void onFrame(VideoFrame frame) {
-      if (target == null) {
-        Logging.d(TAG, "Dropping frame in proxy because target is null.");
-        return;
-      }
+// List of mandatory application permissions.
+private static final String[] MANDATORY_PERMISSIONS = {"android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO", "android.permission.INTERNET"};
 
-      target.onFrame(frame);
+// Peer connection statistics callback period in ms.
+private static final int STAT_CALLBACK_PERIOD = 1000;
+//비디오싱크
+private static class ProxyVideoSink implements VideoSink {
+  private VideoSink target;
+
+  @Override
+  synchronized public void onFrame(VideoFrame frame) {
+    if (target == null) {
+      Logging.d(TAG, "Dropping frame in proxy because target is null.");
+      return;
     }
 
-    synchronized public void setTarget(VideoSink target) {
-      this.target = target;
-    }
+    target.onFrame(frame);
   }
+
+  synchronized public void setTarget(VideoSink target) {
+    this.target = target;
+  }
+}
 
   private final ProxyVideoSink remoteProxyRenderer = new ProxyVideoSink();
   private final ProxyVideoSink localProxyVideoSink = new ProxyVideoSink();
@@ -219,12 +161,10 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   private SignalingParameters signalingParameters;
   @Nullable
   private AppRTCAudioManager audioManager = null;
-//  @Nullable
+  @Nullable
   private SurfaceViewRenderer pipRenderer;
   @Nullable
-  private SurfaceView fullscreenRenderer;
-
-  //  private SurfaceViewRenderer fullscreenRenderer;
+  private SurfaceViewRenderer fullscreenRenderer;
   @Nullable
   private VideoFileRenderer videoFileRenderer;
   private final List<VideoSink> remoteSinks = new ArrayList<>();
@@ -260,27 +200,23 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
 
     // Set window styles for fullscreen-window size. Needs to be done before
     // adding content.
+    //창크기설정
     requestWindowFeature(Window.FEATURE_NO_TITLE);
     getWindow().addFlags(LayoutParams.FLAG_FULLSCREEN | LayoutParams.FLAG_KEEP_SCREEN_ON
             | LayoutParams.FLAG_SHOW_WHEN_LOCKED | LayoutParams.FLAG_TURN_SCREEN_ON);
     getWindow().getDecorView().setSystemUiVisibility(getSystemUiVisibility());
+
+    //activity_call.xml
     setContentView(R.layout.activity_call);
 
     iceConnected = false;
     signalingParameters = null;
 
-    mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-    mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-    mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-    deviceOrientation = new DeviceOrientation();
-
     // Create UI controls.
-//    pipRenderer = findViewById(R.id.pip_video_view);
+    pipRenderer = findViewById(R.id.pip_video_view);
     fullscreenRenderer = findViewById(R.id.fullscreen_video_view);
     callFragment = new CallFragment();
     hudFragment = new HudFragment();
-
-
 
     // Show/hide call control fragment on view click.
     View.OnClickListener listener = new View.OnClickListener() {
@@ -289,16 +225,15 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
         toggleCallControlFragmentVisibility();
       }
     };
-
-    // Swap feeds on pip view click.
-    /*
+/*
     pipRenderer.setOnClickListener(new View.OnClickListener() {
       @Override
+      //통화버튼 누르면 isSwapped가 트루
       public void onClick(View view) {
         setSwappedFeeds(!isSwappedFeeds);
       }
-    });
-*/
+    });*/
+
     fullscreenRenderer.setOnClickListener(listener);
     remoteSinks.add(remoteProxyRenderer);
 
@@ -306,11 +241,11 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     final EglBase eglBase = EglBase.create();
 
     // Create video renderers.
-//    pipRenderer.init(eglBase.getEglBaseContext(), null);
-//    pipRenderer.setScalingType(ScalingType.SCALE_ASPECT_FIT);
+    pipRenderer.init(eglBase.getEglBaseContext(), null);
+    pipRenderer.setScalingType(ScalingType.SCALE_ASPECT_FIT);
     String saveRemoteVideoToFile = intent.getStringExtra(EXTRA_SAVE_REMOTE_VIDEO_TO_FILE);
 
-    // When saveRemoteVideoToFile is set we save the video from the remote to a file.
+    // saveRemoteVideoToFile이 설정되면 원격에서 파일로 비디오를 저장한다.
     if (saveRemoteVideoToFile != null) {
       int videoOutWidth = intent.getIntExtra(EXTRA_SAVE_REMOTE_VIDEO_TO_FILE_WIDTH, 0);
       int videoOutHeight = intent.getIntExtra(EXTRA_SAVE_REMOTE_VIDEO_TO_FILE_HEIGHT, 0);
@@ -323,17 +258,35 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
                 "Failed to open video file for output: " + saveRemoteVideoToFile, e);
       }
     }
-    //fullscreenRenderer.init(eglBase.getEglBaseContext(), null);
-    initSurfaceView();
-    //fullscreenRenderer.setScalingType(ScalingType.SCALE_ASPECT_FILL);
+    fullscreenRenderer.init(eglBase.getEglBaseContext(), null);
+    fullscreenRenderer.setScalingType(ScalingType.SCALE_ASPECT_FILL);
 
-//    pipRenderer.setZOrderMediaOverlay(true);
-//    pipRenderer.setEnableHardwareScaler(true /* enabled */);
-//    fullscreenRenderer.setEnableHardwareScaler(false /* enabled */);
-    // Start with local feed in fullscreen and swap it to the pip when the call is connected.
-//    setSwappedFeeds(true /* isSwappedFeeds */);
+    pipRenderer.setZOrderMediaOverlay(true);
+    pipRenderer.setEnableHardwareScaler(true /* enabled */);
+    fullscreenRenderer.setEnableHardwareScaler(false /* enabled */);
+    // 전체 화면에서 로컬 피드로 시작하여 통화가 연결되면 pip으로 전환
 
-    // Check for mandatory permissions.
+
+    setSwappedFeeds(true);
+    //setSwappedFeeds(true /* isSwappedFeeds */);
+    if(getIntent().getIntExtra("broadOrwatch", -1) == 0){ //camera
+      setSwappedFeeds(true);
+//      localProxyVideoSink.setTarget(0 ? fullscreenRenderer : pipRenderer);
+//         localProxyVideoSink.setTarget(fullscreenRenderer);
+//      remoteProxyRenderer.setTarget(pipRenderer);
+    } else{ //watch
+      setSwappedFeeds(false);
+      //localProxyVideoSink.setTarget(pipRenderer);
+//      remoteProxyRenderer.setTarget(fullscreenRenderer);
+//      localProxyVideoSink.setTarget(pipRenderer);
+//      if(!isSwappedFeeds == false){
+//        pipRenderer.setVisibility(View.GONE);
+//      }
+    }
+
+
+//    pipRenderer.setVisibility(View.GONE);
+    // 사용 권한 확인
     for (String permission : MANDATORY_PERMISSIONS) {
       if (checkCallingOrSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
         logAndToast("Permission " + permission + " is not granted");
@@ -342,7 +295,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
         return;
       }
     }
-
+    //roomUri 값 null일 때
     Uri roomUri = intent.getData();
     if (roomUri == null) {
       logAndToast(getString(org.appspot.apprtc.R.string.missing_url));
@@ -457,22 +410,10 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     } else {
       startCall();
     }
-  }//endOfOncreate
 
-  @Override
-  protected void onResume() {
-    super.onResume();
-    Log.d("tag", "리숨");
-    mSensorManager.registerListener(deviceOrientation.getEventListener(), mAccelerometer, SensorManager.SENSOR_DELAY_UI);
-    mSensorManager.registerListener(deviceOrientation.getEventListener(), mMagnetometer, SensorManager.SENSOR_DELAY_UI);
-  }
 
-  @Override
-  protected void onPause() {
-    Log.d("tag", "멈춤");
-    super.onPause();
-    mSensorManager.unregisterListener(deviceOrientation.getEventListener());
-  }
+  }//endofoncreate
+
 
   @TargetApi(17)
   private DisplayMetrics getDisplayMetrics() {
@@ -518,7 +459,8 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     return getIntent().getBooleanExtra(EXTRA_CAPTURETOTEXTURE_ENABLED, false);
   }
 
-  private @Nullable VideoCapturer createCameraCapturer(CameraEnumerator enumerator) {
+  private @Nullable
+  VideoCapturer createCameraCapturer(CameraEnumerator enumerator) {
     final String[] deviceNames = enumerator.getDeviceNames();
 
     // First, try to find front facing camera
@@ -617,12 +559,10 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     }
   }
 
-
   @Override
   public void onVideoScalingSwitch(ScalingType scalingType) {
-    //fullscreenRenderer.setScalingType(scalingType);
+    fullscreenRenderer.setScalingType(scalingType);
   }
-
 
   @Override
   public void onCaptureFormatChange(int width, int height, int framerate) {
@@ -698,6 +638,8 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     // Enable statistics callback.
     peerConnectionClient.enableStatsEvents(true, STAT_CALLBACK_PERIOD);
     //setSwappedFeeds(false /* isSwappedFeeds */);
+    Toast.makeText(getApplicationContext(), "연결되었습니다.", Toast.LENGTH_SHORT).show();
+
   }
 
   // This method is called when the audio manager reports audio device change,
@@ -718,18 +660,16 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
       appRtcClient.disconnectFromRoom();
       appRtcClient = null;
     }
-    /*
-    if (pipRenderer != null) {
+    /*if (pipRenderer != null) {
       pipRenderer.release();
       pipRenderer = null;
-    }
-    */
+    }*/
     if (videoFileRenderer != null) {
       videoFileRenderer.release();
       videoFileRenderer = null;
     }
     if (fullscreenRenderer != null) {
-      //fullscreenRenderer.release();
+      fullscreenRenderer.release();
       fullscreenRenderer = null;
     }
     if (peerConnectionClient != null) {
@@ -747,7 +687,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     }
     finish();
   }
-
+  //연결에러날 때
   private void disconnectWithErrorMessage(final String errorMessage) {
     if (commandLineRun || !activityRunning) {
       Log.e(TAG, "Critical error: " + errorMessage);
@@ -787,6 +727,8 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
         if (!isError) {
           isError = true;
           disconnectWithErrorMessage(description);
+          Toast.makeText(getApplicationContext(), "연결실패~~", Toast.LENGTH_SHORT).show();
+
         }
       }
     });
@@ -822,20 +764,35 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     }
     return videoCapturer;
   }
-
-  /*
+  /*처음 풀샷이다가 통신하면 내 카메라 작아짐*/
   private void setSwappedFeeds(boolean isSwappedFeeds) {
     Logging.d(TAG, "setSwappedFeeds: " + isSwappedFeeds);
     this.isSwappedFeeds = isSwappedFeeds;
-//    localProxyVideoSink.setTarget(isSwappedFeeds ? fullscreenRenderer : pipRenderer);
-    localProxyVideoSink.setTarget(fullscreenRenderer);
-//    remoteProxyRenderer.setTarget(isSwappedFeeds ? pipRenderer : fullscreenRenderer);
-    remoteProxyRenderer.setTarget(fullscreenRenderer);
+    Toast.makeText(getApplicationContext(), "넘어온 값" + getIntent().getIntExtra("broadOrwatch", -1), Toast.LENGTH_SHORT).show();
+
+//    if(getIntent().getIntExtra("broadOrwatch", -1) == 0){ //camera
+//      localProxyVideoSink.setTarget(fullscreenRenderer);
+//      fullscreenRenderer.setMirror(isSwappedFeeds);
+//    }
+//    else{ //watch
+//      remoteProxyRenderer.setTarget(fullscreenRenderer);
+//      pipRenderer.setVisibility(View.GONE);
+//      if(!isSwappedFeeds == false){
+//        pipRenderer.setVisibility(View.GONE);
+//      }
+
+    localProxyVideoSink.setTarget(isSwappedFeeds ? fullscreenRenderer : pipRenderer);
+    remoteProxyRenderer.setTarget(isSwappedFeeds ? pipRenderer : fullscreenRenderer);
 
     fullscreenRenderer.setMirror(isSwappedFeeds);
-//    pipRenderer.setMirror(!isSwappedFeeds);
-  }
-*/
+    pipRenderer.setMirror(!isSwappedFeeds);
+    pipRenderer.setVisibility(View.GONE);
+
+    //pipRenderer.setMirror(!isSwappedFeeds);
+    }
+
+
+
   // -----Implementation of AppRTCClient.AppRTCSignalingEvents ---------------
   // All callbacks are invoked from websocket signaling looper thread and
   // are routed to UI thread.
@@ -1043,7 +1000,8 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   public void onPeerConnectionError(final String description) {
     reportError(description);
   }
-
+}
+/*
   public void initSurfaceView() {
     DisplayMetrics displayMetrics = new DisplayMetrics();
     getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
@@ -1074,286 +1032,289 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
 
     });
   }
+*/
 
 
-  @TargetApi(19)
-  public void initCameraAndPreview() {
-    HandlerThread handlerThread = new HandlerThread("CAMERA2");
-    handlerThread.start();
-    mHandler = new Handler(handlerThread.getLooper());
-    Handler mainHandler = new Handler(getMainLooper());
-    try {
-      String mCameraId = "" + CameraCharacteristics.LENS_FACING_FRONT; // 후면 카메라 사용
-
-      CameraManager mCameraManager = (CameraManager) this.getSystemService(Context.CAMERA_SERVICE);
-      CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(mCameraId);
-      StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-
-      Size largestPreviewSize = map.getOutputSizes(ImageFormat.JPEG)[0];
-      Log.i("LargestSize", largestPreviewSize.getWidth() + " " + largestPreviewSize.getHeight());
-
-      setAspectRatioTextureView(largestPreviewSize.getHeight(),largestPreviewSize.getWidth());
-
-      mImageReader = ImageReader.newInstance(largestPreviewSize.getWidth(), largestPreviewSize.getHeight(), ImageFormat.JPEG,/*maxImages*/7);
-      mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mainHandler);
-      if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-        return;
-      }
-      mCameraManager.openCamera(mCameraId, deviceStateCallback, mHandler);
-    } catch (CameraAccessException e) {
-      Toast.makeText(this, "카메라를 열지 못했습니다.", Toast.LENGTH_SHORT).show();
-    }
-  }
-
-
-  private ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
-    @Override
-    public void onImageAvailable(ImageReader reader) {
-
-      Image image = reader.acquireNextImage();
-      ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-      byte[] bytes = new byte[buffer.remaining()];
-      buffer.get(bytes);
-      final Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-      new CallActivity.SaveImageTask().execute(bitmap);
-    }
-  };
-
-
-  private CameraDevice.StateCallback deviceStateCallback = new CameraDevice.StateCallback() {
-    @Override
-    public void onOpened(CameraDevice camera) {
-      mCameraDevice = camera;
-      try {
-        takePreview();
-      } catch (CameraAccessException e) {
-        e.printStackTrace();
-      }
-    }
-
-    @Override
-    public void onDisconnected(@NonNull CameraDevice camera) {
-      if (mCameraDevice != null) {
-        mCameraDevice.close();
-        mCameraDevice = null;
-      }
-    }
-
-    @Override
-    public void onError(CameraDevice camera, int error) {
-      Toast.makeText(CallActivity.this, "카메라를 열지 못했습니다.", Toast.LENGTH_SHORT).show();
-    }
-  };
-
-
-  public void takePreview() throws CameraAccessException {
-    mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-    mPreviewBuilder.addTarget(mSurfaceViewHolder.getSurface());
-    mCameraDevice.createCaptureSession(Arrays.asList(mSurfaceViewHolder.getSurface(), mImageReader.getSurface()), mSessionPreviewStateCallback, mHandler);
-  }
-
-  private CameraCaptureSession.StateCallback mSessionPreviewStateCallback = new CameraCaptureSession.StateCallback() {
-    @Override
-    public void onConfigured(@NonNull CameraCaptureSession session) {
-      mSession = session;
-
-      try {
-
-        mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-        mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-        mSession.setRepeatingRequest(mPreviewBuilder.build(), null, mHandler);
-      } catch (CameraAccessException e) {
-        e.printStackTrace();
-      }
-    }
-
-    @Override
-    public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-      Toast.makeText(CallActivity.this, "카메라 구성 실패", Toast.LENGTH_SHORT).show();
-    }
-  };
-
-  private CameraCaptureSession.CaptureCallback mSessionCaptureCallback = new CameraCaptureSession.CaptureCallback() {
-    @Override
-    public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
-      mSession = session;
-      unlockFocus();
-    }
-
-    @Override
-    public void onCaptureProgressed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureResult partialResult) {
-      mSession = session;
-    }
-
-    @Override
-    public void onCaptureFailed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureFailure failure) {
-      super.onCaptureFailed(session, request, failure);
-    }
-  };
-
-
-  public void takePicture() {
-
-    try {
-      CaptureRequest.Builder captureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);//用来设置拍照请求的request
-      captureRequestBuilder.addTarget(mImageReader.getSurface());
-      captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-      captureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-
-
-      // 화면 회전 안되게 고정시켜 놓은 상태에서는 아래 로직으로 방향을 얻을 수 없어서
-      // 센서를 사용하는 것으로 변경
-      //deviceRotation = getResources().getConfiguration().orientation;
-      mDeviceRotation = ORIENTATIONS.get(deviceOrientation.getOrientation());
-      Log.d("@@@", mDeviceRotation+"");
-
-      captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, mDeviceRotation);
-      CaptureRequest mCaptureRequest = captureRequestBuilder.build();
-      mSession.capture(mCaptureRequest, mSessionCaptureCallback, mHandler);
-    } catch (CameraAccessException e) {
-      e.printStackTrace();
-    }
-  }
-
-  public Bitmap getRotatedBitmap(Bitmap bitmap, int degrees) throws Exception {
-    if(bitmap == null) return null;
-    if (degrees == 0) return bitmap;
-
-    Matrix m = new Matrix();
-    m.setRotate(degrees, (float) bitmap.getWidth() / 2, (float) bitmap.getHeight() / 2);
-
-    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, true);
-  }
-
-
-
-  /**
-   * Unlock the focus. This method should be called when still image capture sequence is
-   * finished.
-   */
-  private void unlockFocus() {
-    try {
-      // Reset the auto-focus trigger
-      mPreviewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-              CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-      mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-              CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-      mSession.capture(mPreviewBuilder.build(), mSessionCaptureCallback,
-              mHandler);
-      // After this, the camera will go back to the normal state of preview.
-      mSession.setRepeatingRequest(mPreviewBuilder.build(), mSessionCaptureCallback,
-              mHandler);
-    } catch (CameraAccessException e) {
-      e.printStackTrace();
-    }
-  }
-
-
-  //출처 - https://codeday.me/ko/qa/20190310/39556.html
-  /**
-   * A copy of the Android internals  insertImage method, this method populates the
-   * meta data with DATE_ADDED and DATE_TAKEN. This fixes a common problem where media
-   * that is inserted manually gets saved at the end of the gallery (because date is not populated).
-   * @see android.provider.MediaStore.Images.Media#insertImage(ContentResolver, Bitmap, String, String)
-   */
-  public static final String insertImage(ContentResolver cr,
-                                         Bitmap source,
-                                         String title,
-                                         String description) {
-
-    ContentValues values = new ContentValues();
-    values.put(MediaStore.Images.Media.TITLE, title);
-    values.put(MediaStore.Images.Media.DISPLAY_NAME, title);
-    values.put(MediaStore.Images.Media.DESCRIPTION, description);
-    values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-    // Add the date meta data to ensure the image is added at the front of the gallery
-    values.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis());
-    values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
-
-    Uri url = null;
-    String stringUrl = null;    /* value to be returned */
-
-    try {
-      url = cr.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-
-      if (source != null) {
-        OutputStream imageOut = cr.openOutputStream(url);
-        try {
-          source.compress(Bitmap.CompressFormat.JPEG, 50, imageOut);
-        } finally {
-          imageOut.close();
-        }
-
-      } else {
-        cr.delete(url, null, null);
-        url = null;
-      }
-    } catch (Exception e) {
-      if (url != null) {
-        cr.delete(url, null, null);
-        url = null;
-      }
-    }
-
-    if (url != null) {
-      stringUrl = url.toString();
-    }
-
-    return stringUrl;
-  }
-
-
-  private class SaveImageTask extends AsyncTask<Bitmap, Void, Void> {
-
-    @Override
-    protected void onPostExecute(Void aVoid) {
-      super.onPostExecute(aVoid);
-
-      Toast.makeText(CallActivity.this, "사진을 저장하였습니다.", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    protected Void doInBackground(Bitmap... data) {
-
-      Bitmap bitmap = null;
-      try {
-        bitmap = getRotatedBitmap(data[0], mDeviceRotation);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      insertImage(getContentResolver(), bitmap, ""+ System.currentTimeMillis(), "");
-
-      return null;
-    }
-
-  }
-
-
-  // 출처 https://stackoverflow.com/a/43516672
-  private void setAspectRatioTextureView(int ResolutionWidth , int ResolutionHeight )
-  {
-    if(ResolutionWidth > ResolutionHeight){
-      int newWidth = mDSI_width;
-      int newHeight = ((mDSI_width * ResolutionWidth)/ResolutionHeight);
-      updateTextureViewSize(newWidth,newHeight);
-
-    }else {
-      int newWidth = mDSI_width;
-      int newHeight = ((mDSI_width * ResolutionHeight)/ResolutionWidth);
-      updateTextureViewSize(newWidth,newHeight);
-    }
-
-  }
-
-  private void updateTextureViewSize(int viewWidth, int viewHeight) {
-    Log.d("@@@", "TextureView Width : " + viewWidth + " TextureView Height : " + viewHeight);
-    fullscreenRenderer.setLayoutParams(new FrameLayout.LayoutParams(viewWidth, viewHeight));
-  }
-  @Override
-  public boolean onCreateOptionsMenu(Menu menu) {
-    getMenuInflater().inflate(R.menu.connect_menu, menu);
-    return true;
-  }
-
-}
+//카메라
+//
+//  @TargetApi(19)
+//  public void initCameraAndPreview() {
+//    HandlerThread handlerThread = new HandlerThread("CAMERA2");
+//    handlerThread.start();
+//    mHandler = new Handler(handlerThread.getLooper());
+//    Handler mainHandler = new Handler(getMainLooper());
+//    try {
+//      String mCameraId = "" + CameraCharacteristics.LENS_FACING_FRONT; // 후면 카메라 사용
+//
+//      CameraManager mCameraManager = (CameraManager) this.getSystemService(Context.CAMERA_SERVICE);
+//      CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(mCameraId);
+//      StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+//
+//      Size largestPreviewSize = map.getOutputSizes(ImageFormat.JPEG)[0];
+//      Log.i("LargestSize", largestPreviewSize.getWidth() + " " + largestPreviewSize.getHeight());
+//
+//      setAspectRatioTextureView(largestPreviewSize.getHeight(),largestPreviewSize.getWidth());
+//
+//      mImageReader = ImageReader.newInstance(largestPreviewSize.getWidth(), largestPreviewSize.getHeight(), ImageFormat.JPEG,/*maxImages*/7);
+//      mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mainHandler);
+//      if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+//        return;
+//      }
+//      mCameraManager.openCamera(mCameraId, deviceStateCallback, mHandler);
+//    } catch (CameraAccessException e) {
+//      Toast.makeText(this, "카메라를 열지 못했습니다.", Toast.LENGTH_SHORT).show();
+//    }
+//  }
+//
+//
+//  private ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
+//    @Override
+//    public void onImageAvailable(ImageReader reader) {
+//
+//      Image image = reader.acquireNextImage();
+//      ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+//      byte[] bytes = new byte[buffer.remaining()];
+//      buffer.get(bytes);
+//      final Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+//      new CallActivity.SaveImageTask().execute(bitmap);
+//    }
+//  };
+//
+//
+//  private CameraDevice.StateCallback deviceStateCallback = new CameraDevice.StateCallback() {
+//    @Override
+//    public void onOpened(CameraDevice camera) {
+//      mCameraDevice = camera;
+//      try {
+//        takePreview();
+//      } catch (CameraAccessException e) {
+//        e.printStackTrace();
+//      }
+//    }
+//
+//    @Override
+//    public void onDisconnected(@NonNull CameraDevice camera) {
+//      if (mCameraDevice != null) {
+//        mCameraDevice.close();
+//        mCameraDevice = null;
+//      }
+//    }
+//
+//    @Override
+//    public void onError(CameraDevice camera, int error) {
+//      Toast.makeText(CallActivity.this, "카메라를 열지 못했습니다.", Toast.LENGTH_SHORT).show();
+//    }
+//  };
+//
+//
+//  public void takePreview() throws CameraAccessException {
+//    mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+//    mPreviewBuilder.addTarget(mSurfaceViewHolder.getSurface());
+//    mCameraDevice.createCaptureSession(Arrays.asList(mSurfaceViewHolder.getSurface(), mImageReader.getSurface()), mSessionPreviewStateCallback, mHandler);
+//  }
+//
+//  private CameraCaptureSession.StateCallback mSessionPreviewStateCallback = new CameraCaptureSession.StateCallback() {
+//    @Override
+//    public void onConfigured(@NonNull CameraCaptureSession session) {
+//      mSession = session;
+//
+//      try {
+//
+//        mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+//        mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+//        mSession.setRepeatingRequest(mPreviewBuilder.build(), null, mHandler);
+//      } catch (CameraAccessException e) {
+//        e.printStackTrace();
+//      }
+//    }
+//
+//    @Override
+//    public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+//      Toast.makeText(CallActivity.this, "카메라 구성 실패", Toast.LENGTH_SHORT).show();
+//    }
+//  };
+//
+//  private CameraCaptureSession.CaptureCallback mSessionCaptureCallback = new CameraCaptureSession.CaptureCallback() {
+//    @Override
+//    public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
+//      mSession = session;
+//      unlockFocus();
+//    }
+//
+//    @Override
+//    public void onCaptureProgressed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureResult partialResult) {
+//      mSession = session;
+//    }
+//
+//    @Override
+//    public void onCaptureFailed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureFailure failure) {
+//      super.onCaptureFailed(session, request, failure);
+//    }
+//  };
+//
+//
+//  public void takePicture() {
+//
+//    try {
+//      CaptureRequest.Builder captureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);//用来设置拍照请求的request
+//      captureRequestBuilder.addTarget(mImageReader.getSurface());
+//      captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+//      captureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+//
+//
+//      // 화면 회전 안되게 고정시켜 놓은 상태에서는 아래 로직으로 방향을 얻을 수 없어서
+//      // 센서를 사용하는 것으로 변경
+//      //deviceRotation = getResources().getConfiguration().orientation;
+//      mDeviceRotation = ORIENTATIONS.get(deviceOrientation.getOrientation());
+//      Log.d("@@@", mDeviceRotation+"");
+//
+//      captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, mDeviceRotation);
+//      CaptureRequest mCaptureRequest = captureRequestBuilder.build();
+//      mSession.capture(mCaptureRequest, mSessionCaptureCallback, mHandler);
+//    } catch (CameraAccessException e) {
+//      e.printStackTrace();
+//    }
+//  }
+//
+//  public Bitmap getRotatedBitmap(Bitmap bitmap, int degrees) throws Exception {
+//    if(bitmap == null) return null;
+//    if (degrees == 0) return bitmap;
+//
+//    Matrix m = new Matrix();
+//    m.setRotate(degrees, (float) bitmap.getWidth() / 2, (float) bitmap.getHeight() / 2);
+//
+//    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, true);
+//  }
+//
+//
+//
+//  /**
+//   * Unlock the focus. This method should be called when still image capture sequence is
+//   * finished.
+//   */
+//  private void unlockFocus() {
+//    try {
+//      // Reset the auto-focus trigger
+//      mPreviewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+//              CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
+//      mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+//              CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+//      mSession.capture(mPreviewBuilder.build(), mSessionCaptureCallback,
+//              mHandler);
+//      // After this, the camera will go back to the normal state of preview.
+//      mSession.setRepeatingRequest(mPreviewBuilder.build(), mSessionCaptureCallback,
+//              mHandler);
+//    } catch (CameraAccessException e) {
+//      e.printStackTrace();
+//    }
+//  }
+//
+//
+//  //출처 - https://codeday.me/ko/qa/20190310/39556.html
+//  /**
+//   * A copy of the Android internals  insertImage method, this method populates the
+//   * meta data with DATE_ADDED and DATE_TAKEN. This fixes a common problem where media
+//   * that is inserted manually gets saved at the end of the gallery (because date is not populated).
+//   * @see android.provider.MediaStore.Images.Media#insertImage(ContentResolver, Bitmap, String, String)
+//   */
+//  public static final String insertImage(ContentResolver cr,
+//                                         Bitmap source,
+//                                         String title,
+//                                         String description) {
+//
+//    ContentValues values = new ContentValues();
+//    values.put(MediaStore.Images.Media.TITLE, title);
+//    values.put(MediaStore.Images.Media.DISPLAY_NAME, title);
+//    values.put(MediaStore.Images.Media.DESCRIPTION, description);
+//    values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+//    // Add the date meta data to ensure the image is added at the front of the gallery
+//    values.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis());
+//    values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
+//
+//    Uri url = null;
+//    String stringUrl = null;    /* value to be returned */
+//
+//    try {
+//      url = cr.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+//
+//      if (source != null) {
+//        OutputStream imageOut = cr.openOutputStream(url);
+//        try {
+//          source.compress(Bitmap.CompressFormat.JPEG, 50, imageOut);
+//        } finally {
+//          imageOut.close();
+//        }
+//
+//      } else {
+//        cr.delete(url, null, null);
+//        url = null;
+//      }
+//    } catch (Exception e) {
+//      if (url != null) {
+//        cr.delete(url, null, null);
+//        url = null;
+//      }
+//    }
+//
+//    if (url != null) {
+//      stringUrl = url.toString();
+//    }
+//
+//    return stringUrl;
+//  }
+//
+//
+//  private class SaveImageTask extends AsyncTask<Bitmap, Void, Void> {
+//
+//    @Override
+//    protected void onPostExecute(Void aVoid) {
+//      super.onPostExecute(aVoid);
+//
+//      Toast.makeText(CallActivity.this, "사진을 저장하였습니다.", Toast.LENGTH_SHORT).show();
+//    }
+//
+//    @Override
+//    protected Void doInBackground(Bitmap... data) {
+//
+//      Bitmap bitmap = null;
+//      try {
+//        bitmap = getRotatedBitmap(data[0], mDeviceRotation);
+//      } catch (Exception e) {
+//        e.printStackTrace();
+//      }
+//      insertImage(getContentResolver(), bitmap, ""+ System.currentTimeMillis(), "");
+//
+//      return null;
+//    }
+//
+//  }
+//
+//
+//  // 출처 https://stackoverflow.com/a/43516672
+//  private void setAspectRatioTextureView(int ResolutionWidth , int ResolutionHeight )
+//  {
+//    if(ResolutionWidth > ResolutionHeight){
+//      int newWidth = mDSI_width;
+//      int newHeight = ((mDSI_width * ResolutionWidth)/ResolutionHeight);
+//      updateTextureViewSize(newWidth,newHeight);
+//
+//    }else {
+//      int newWidth = mDSI_width;
+//      int newHeight = ((mDSI_width * ResolutionHeight)/ResolutionWidth);
+//      updateTextureViewSize(newWidth,newHeight);
+//    }
+//
+//  }
+//
+//  private void updateTextureViewSize(int viewWidth, int viewHeight) {
+//    Log.d("@@@", "TextureView Width : " + viewWidth + " TextureView Height : " + viewHeight);
+//    fullscreenRenderer.setLayoutParams(new FrameLayout.LayoutParams(viewWidth, viewHeight));
+//  }
+//  @Override
+//  public boolean onCreateOptionsMenu(Menu menu) {
+//    getMenuInflater().inflate(R.menu.connect_menu, menu);
+//    return true;
+//  }
+//
+//}
 
